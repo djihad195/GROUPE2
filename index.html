@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>طلبات تغيير المجموعات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center font-sans">
+  <div class="container mx-auto p-4 w-full">
+    <!-- واجهة الطالب -->
+    <div id="student-section" class="bg-white shadow-2xl rounded-2xl p-6 max-w-lg mx-auto transform transition hover:scale-105">
+      <h1 class="text-3xl font-extrabold mb-6 text-center text-indigo-700">📑 طلب تغيير المجموعة</h1>
+      <form id="requestForm" class="space-y-4">
+        <input type="text" id="name" placeholder="✍️ الاسم واللقب" required class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+        <select id="currentGroup" required class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <option value="">اختر مجموعتك الحالية</option>
+          <script>
+            for (let i = 65; i <= 80; i++) {
+              document.write(`<option value="${String.fromCharCode(i)}">${String.fromCharCode(i)}</option>`);
+            }
+          </script>
+        </select>
+        <textarea id="desiredGroups" placeholder="📝 اكتب 1 إلى 3 مجموعات تريد التحويل إليها (افصل بينها بفاصلة)" class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+        <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-bold hover:bg-indigo-700 transition">🚀 إرسال</button>
+      </form>
+    </div>
+
+    <!-- زر دخول الإدارة -->
+    <div class="text-center mt-6">
+      <button onclick="showLogin()" class="bg-gray-800 text-white px-6 py-2 rounded-full shadow-lg hover:bg-black transition">🔐 دخول الإدارة</button>
+    </div>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-section" class="hidden bg-white shadow-2xl rounded-2xl p-6 max-w-md mx-auto mt-6 transform transition hover:scale-105">
+      <h2 class="text-2xl font-extrabold mb-4 text-center text-green-600">🔑 تسجيل الدخول</h2>
+      <input type="password" id="adminPass" placeholder="كلمة المرور" class="w-full border p-3 rounded-lg mb-4 focus:ring-2 focus:ring-green-500" />
+      <button onclick="login()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 transition">✅ دخول</button>
+    </div>
+
+    <!-- واجهة الإدارة -->
+    <div id="admin-section" class="hidden bg-white shadow-2xl rounded-2xl p-6 mt-6 overflow-x-auto">
+      <h2 class="text-3xl font-extrabold mb-6 text-center text-indigo-700">📋 لوحة الإدارة</h2>
+
+      <!-- شريط البحث -->
+      <div class="mb-4 flex justify-center">
+        <input type="text" id="searchInput" placeholder="🔍 بحث بالاسم أو المجموعة" class="w-full max-w-md border p-3 rounded-lg focus:ring-2 focus:ring-indigo-500" onkeyup="filterTable()" />
+      </div>
+
+      <!-- جدول الطلبات -->
+      <table id="requestsTable" class="w-full border text-sm rounded-lg overflow-hidden">
+        <thead class="bg-indigo-600 text-white">
+          <tr>
+            <th class="p-2">👤 الاسم</th>
+            <th class="p-2">📌 المجموعة الحالية</th>
+            <th class="p-2">➡️ المجموعات المطلوبة</th>
+          </tr>
+        </thead>
+        <tbody id="requestsBody" class="text-center bg-gray-50"></tbody>
+      </table>
+    </div>
+
+    <!-- التذييل -->
+    <footer class="text-center mt-10 text-white font-semibold drop-shadow-lg">
+      ⚡ Powered by <span class="text-yellow-300">DJO</span>
+    </footer>
+  </div>
+
+  <script>
+    let PASSWORD = localStorage.getItem("adminPassword") || "BBBB"; // كلمة المرور الافتراضية
+
+    // إرسال الطلب
+    document.getElementById("requestForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      let name = document.getElementById("name").value;
+      let current = document.getElementById("currentGroup").value;
+      let desired = document.getElementById("desiredGroups").value;
+
+      let requests = JSON.parse(localStorage.getItem("requests") || "[]");
+      requests.push({name, current, desired});
+      localStorage.setItem("requests", JSON.stringify(requests));
+
+      alert("✅ تم إرسال طلبك بنجاح");
+      this.reset();
+    });
+
+    // عرض شاشة الدخول
+    function showLogin(){
+      document.getElementById("login-section").classList.remove("hidden");
+      document.getElementById("login-section").scrollIntoView({behavior: 'smooth'});
+    }
+
+    // دخول الإدارة
+    function login(){
+      let pass = document.getElementById("adminPass").value;
+      if(pass === PASSWORD){
+        document.getElementById("admin-section").classList.remove("hidden");
+        document.getElementById("admin-section").scrollIntoView({behavior: 'smooth'});
+        loadTable();
+      } else {
+        alert("❌ كلمة المرور غير صحيحة");
+      }
+    }
+
+    // تحميل الطلبات في جدول موحد
+    function loadTable(){
+      let requests = JSON.parse(localStorage.getItem("requests") || "[]");
+      let tbody = document.getElementById("requestsBody");
+      tbody.innerHTML = "";
+      requests.sort((a,b) => a.current.localeCompare(b.current));
+      requests.forEach(r => {
+        tbody.innerHTML += `<tr class='border-b hover:bg-gray-100'>
+          <td class='p-2'>${r.name}</td>
+          <td class='p-2'>${r.current}</td>
+          <td class='p-2'>${r.desired}</td>
+        </tr>`;
+      });
+    }
+
+    // فلترة الطلبات
+    function filterTable(){
+      let input = document.getElementById("searchInput").value.toLowerCase();
+      let rows = document.querySelectorAll("#requestsBody tr");
+      rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+  </script>
+</body>
+</html>سس
